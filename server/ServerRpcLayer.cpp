@@ -83,6 +83,8 @@ bool RpcLayer::processRpcQuery(RpcProcessingContext &context)
         return processInitConnection(context);
     case TLValue::InvokeWithLayer:
         return processInvokeWithLayer(context);
+    case TLValue::MsgContainer:
+        return processMsgContainer(context);
     default:
         break;
     }
@@ -148,6 +150,26 @@ bool RpcLayer::processInvokeWithLayer(RpcProcessingContext &context)
     qDebug() << Q_FUNC_INFO << "InvokeWithLayer" << layer;
 //    context.setLayer(layer);
     return processRpcQuery(context);
+}
+
+bool RpcLayer::processMsgContainer(RpcProcessingContext &context)
+{
+    // https://core.telegram.org/mtproto/service_messages#simple-container
+    quint32 itemsCount;
+    context.inputStream() >> itemsCount;
+
+    for (quint32 i = 0; i < itemsCount; ++i) {
+        quint64 id;
+        context.inputStream() >> id;
+        //todo: ack
+        quint32 seqNo;
+        context.inputStream() >> seqNo;
+        quint32 size;
+        context.inputStream() >> size;
+
+        processRpcQuery(context.inputStream().readBytes(size), id);
+    }
+    return true;
 }
 
 bool RpcLayer::sendRpcError(const RpcError &error, quint64 messageId)
