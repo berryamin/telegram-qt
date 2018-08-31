@@ -74,3 +74,13 @@ QString RpcProcessingContext::userNameFromRequest() const
     outputStream >> name;
     return name;
 }
+
+quint32 RpcProcessingContext::layer() const
+{
+    return m_layer;
+}
+
+void RpcProcessingContext::setLayer(quint32 layer)
+{
+    m_layer = layer;
+}
