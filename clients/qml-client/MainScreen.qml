@@ -20,7 +20,7 @@ Frame {
             height: parent.height
             onActivateDialog: {
                 console.log("Activate dialog peer(" + peer.type + ", " + peer.id + ")")
-                messageView.peer = dialogView.peer
+                messageView.peer = peer
             }
         }
 

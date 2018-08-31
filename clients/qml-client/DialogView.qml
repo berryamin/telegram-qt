@@ -11,11 +11,11 @@ Frame {
     height: 600
 
     signal activateDialog(var peer)
-    property alias activatedPeer: contactsModel2.peer
+    //property alias activatedPeer: contactsModel2.peer
 
-    Telegram.MessageModel {
-        id: contactsModel2
-    }
+//    Telegram.MessageModel {
+//        id: contactsModel2
+//    }
 
     ListModel {
         id: contactsModel

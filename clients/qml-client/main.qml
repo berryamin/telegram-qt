@@ -28,8 +28,8 @@ ApplicationWindow {
 
     QtObject {
         id: options
-//        property bool localServer: true
-        property bool localServer: false
+        property bool localServer: true
+//        property bool localServer: false
     }
 
     ListModel {
@@ -136,7 +136,7 @@ ApplicationWindow {
         interval: 50
         running: true
         onTriggered: {
-//            window.currentView = mainScreen; return
+            window.currentView = mainScreen; return
             if (accountHelper.account) {
                 restoreSessionOperation.phoneNumber = accountHelper.account
                 restoreSessionOperation.start()
