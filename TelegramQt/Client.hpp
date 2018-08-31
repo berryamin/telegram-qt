@@ -40,6 +40,7 @@ class Settings;
 class DataStorage;
 class AccountStorage;
 class AuthOperation;
+class FileOperation;
 
 //class LegacyCredentialsStorage : public CredentialsStorage
 //{
@@ -263,7 +264,8 @@ public Q_SLOTS:
 //    void deleteContact(quint32 userId);
 //    void deleteContacts(const QVector<quint32> &userIds);
 
-//    PendingOperation *requestFile(const RemoteFile *file);
+    FileOperation *getFile(const Telegram::RemoteFile *file);
+    FileOperation *getPeerPicture(const Telegram::Peer &peer, Telegram::PeerPictureSize size = Telegram::PeerPictureSize::Small);
 //    PendingOperation *requestHistory(const Peer &peer, int offset, int limit);
 //    PendingOperation *resolveUsername(const QString &userName);
 //    PendingOperation *uploadFile(const QByteArray &fileContent, const QString &fileName);
