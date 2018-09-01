@@ -92,17 +92,24 @@ struct SslBigNumber {
         return SslBigNumber();
     }
 
-    static QByteArray toByteArray(const BIGNUM *number)
+    static QByteArray toByteArray(const BIGNUM *number, int length = 0)
     {
         QByteArray result;
-        result.resize(BN_num_bytes(number));
-        BN_bn2bin(number, (uchar *) result.data());
+        int bytes = BN_num_bytes(number);
+        result.resize(qMax<int>(length, bytes));
+        uchar *output = reinterpret_cast<uchar *>(result.data());
+        while (length > bytes) {
+            *output = 0;
+            output++;
+            bytes++;
+        }
+        BN_bn2bin(number, output);
         return result;
     }
 
-    QByteArray toByteArray() const
+    QByteArray toByteArray(int length = 0) const
     {
-        return toByteArray(m_number);
+        return toByteArray(m_number, length);
     }
 
     SslBigNumber mod_exp(const SslBigNumber &exponent, const SslBigNumber &modulus) const
