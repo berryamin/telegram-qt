@@ -14,6 +14,7 @@ set(telegram_qt_SOURCES
     CAppInformation.cpp
     CTelegramTransport.cpp
     DataStorage.cpp
+    FileDataStorage.cpp
     LegacySecretReader.cpp
     RpcError.cpp
     RpcLayer.cpp
@@ -50,6 +51,7 @@ set(telegram_qt_META_HEADERS
     Connection.hpp
     DataStorage.hpp
     DhLayer.hpp
+    FileDataStorage.hpp
     LegacySecretReader.hpp
     RpcError.hpp
     RpcLayer.hpp
@@ -89,6 +91,7 @@ set(telegram_qt_HEADERS
     DataStorage_p.hpp
     Debug.hpp
     Debug_p.hpp
+    FileDataStorage_p.hpp
     Utils.hpp
     FileRequestDescriptor.hpp
     TelegramUtils.hpp

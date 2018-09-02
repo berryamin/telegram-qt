@@ -41,6 +41,7 @@ SOURCES += \
     ClientRpcLayer.cpp \
     ClientRpcLayerExtension.cpp \
     DataStorage.cpp \
+    FileDataStorage.cpp \
     RpcError.cpp \
     RpcLayer.cpp \
     Connection.cpp \
@@ -93,6 +94,8 @@ HEADERS += \
     ClientRpcLayerExtension.hpp \
     DataStorage.hpp \
     DataStorage_p.hpp \
+    FileDataStorage.hpp \
+    FileDataStorage_p.hpp \
     RpcError.hpp \
     RpcLayer.hpp \
     Connection.hpp \
