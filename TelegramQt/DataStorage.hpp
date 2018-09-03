@@ -21,6 +21,7 @@
 #include <QObject>
 
 #include "DcConfiguration.hpp"
+#include "TelegramNamespace.hpp"
 
 namespace Telegram {
 
@@ -36,6 +37,11 @@ public:
 
     DcConfiguration serverConfiguration() const;
     void setServerConfiguration(const DcConfiguration &configuration);
+
+    bool getDialogInfo(DialogInfo *info, const Peer &peer) const;
+    bool getUserInfo(UserInfo *info, quint32 userId) const;
+    bool getChatInfo(ChatInfo *info, const Peer peer) const;
+    bool getChatParticipants(QVector<quint32> *participants, quint32 chatId);
 
 protected:
     DataStorage(DataStoragePrivate *d, QObject *parent);
