@@ -23,11 +23,45 @@
 #include "DcConfiguration.hpp"
 #include "TelegramNamespace.hpp"
 
+#include "TLTypes.hpp"
+
+
 namespace Telegram {
+
+class PendingOperation;
 
 namespace Client {
 
 class DataStoragePrivate;
+
+class DataInternalApi : public QObject
+{
+    Q_OBJECT
+public:
+    explicit DataInternalApi(QObject *parent = nullptr);
+
+    void processDialogs(const TLMessagesDialogs &dialogs);
+
+
+
+    // Getters
+    // const TLUser *getUser(quint32 userId) const;
+    // const TLChat *getChat(const Telegram::Peer &peer) const;
+    // const TLMessage *getMessage(quint32 messageId, const Telegram::Peer &peer) const;
+
+    // TLInputPeer toInputPeer(const Telegram::Peer &peer) const;
+    // Telegram::Peer toPublicPeer(const TLInputPeer &inputPeer) const;
+    static Telegram::Peer toPublicPeer(const TLPeer &peer);
+    // Telegram::Peer toPublicPeer(const TLUser &user) const;
+    // Telegram::Peer toPublicPeer(const TLChat *chat) const;
+    // TLPeer toTLPeer(const Telegram::Peer &peer) const;
+    TLInputUser toInputUser(quint32 id) const { return TLInputUser(); }
+    // TLInputChannel toInputChannel(const Telegram::Peer &peer);
+    // TLInputChannel toInputChannel(const TLChat *chat);
+    // TLInputChannel toInputChannel(const TLDialog &dialog);
+
+    TLMessagesDialogs m_dialogs;
+};
 
 class DataStorage : public QObject
 {
@@ -35,13 +69,17 @@ class DataStorage : public QObject
 public:
     explicit DataStorage(QObject *parent = nullptr);
 
+    DataInternalApi *internalApi();
+
     DcConfiguration serverConfiguration() const;
     void setServerConfiguration(const DcConfiguration &configuration);
 
-    bool getDialogInfo(DialogInfo *info, const Peer &peer) const;
-    bool getUserInfo(UserInfo *info, quint32 userId) const;
-    bool getChatInfo(ChatInfo *info, const Peer peer) const;
-    bool getChatParticipants(QVector<quint32> *participants, quint32 chatId);
+    QVector<Telegram::Peer> dialogs() const;
+
+    //bool getDialogInfo(DialogInfo *info, const Peer &peer) const;
+//    bool getUserInfo(UserInfo *info, quint32 userId) const;
+//    bool getChatInfo(ChatInfo *info, const Peer peer) const;
+//    bool getChatParticipants(QVector<quint32> *participants, quint32 chatId);
 
 protected:
     DataStorage(DataStoragePrivate *d, QObject *parent);
@@ -55,6 +93,8 @@ class InMemoryDataStorage : public DataStorage
     Q_OBJECT
 public:
     explicit InMemoryDataStorage(QObject *parent = nullptr);
+
+//    QVector<Telegram::Peer> dialogs() const override;
 
 };
 

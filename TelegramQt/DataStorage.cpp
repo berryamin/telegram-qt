@@ -34,6 +34,14 @@ namespace Client {
 DataStorage::DataStorage(QObject *parent) :
     DataStorage(new DataStoragePrivate(), parent)
 {
+    Q_D(DataStorage);
+    d->m_api = new DataInternalApi(this);
+}
+
+DataInternalApi *DataStorage::internalApi()
+{
+    Q_D(DataStorage);
+    return d->m_api;
 }
 
 DcConfiguration DataStorage::serverConfiguration() const
@@ -48,6 +56,18 @@ void DataStorage::setServerConfiguration(const DcConfiguration &configuration)
     d->m_serverConfig = configuration;
 }
 
+QVector<Peer> DataStorage::dialogs() const
+{
+    Q_D(const DataStorage);
+    const auto dialogs = d->m_api->m_dialogs;
+    QVector<Peer> result;
+    result.reserve(dialogs.count);
+    for (const TLDialog &dialog : dialogs.dialogs) {
+        result.append(DataInternalApi::toPublicPeer(dialog.peer));
+    }
+    return result;
+}
+
 DataStorage::DataStorage(DataStoragePrivate *d, QObject *parent)
     : QObject(parent),
       d_ptr(d)
@@ -58,6 +78,35 @@ InMemoryDataStorage::InMemoryDataStorage(QObject *parent) :
     DataStorage(parent)
 {
 }
+
+DataInternalApi::DataInternalApi(QObject *parent) :
+    QObject(parent)
+{
+}
+
+void DataInternalApi::processDialogs(const TLMessagesDialogs &dialogs)
+{
+    m_dialogs = dialogs;
+}
+
+Peer DataInternalApi::toPublicPeer(const TLPeer &peer)
+{
+    switch (peer.tlType) {
+    case TLValue::PeerChat:
+        return Telegram::Peer(peer.chatId, Telegram::Peer::Chat);
+    case TLValue::PeerChannel:
+        return Telegram::Peer(peer.channelId, Telegram::Peer::Channel);
+    case TLValue::PeerUser:
+        return Telegram::Peer(peer.userId);
+    default:
+        return Telegram::Peer();
+    }
+}
+
+//QVector<Peer> InMemoryDataStorage::dialogs() const
+//{
+//    return {};
+//}
 
 } // Client namespace
 

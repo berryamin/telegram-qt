@@ -58,6 +58,11 @@ public:
     AuthOperation *signIn();
     PendingOperation *getDcConfig();
 
+    PendingOperation *sync();
+    PendingOperation *syncDialogs();
+
+    PendingOperation *getUserFullInfo(Telegram::UserInfo *info, quint32 userId);
+
     FileOperation *getFile(const Telegram::RemoteFile *file);
     FileOperation *getPeerPicture(const Telegram::Peer &peer, Telegram::PeerPictureSize size = Telegram::PeerPictureSize::Small);
 
