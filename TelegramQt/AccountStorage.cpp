@@ -1,5 +1,6 @@
 #include "AccountStorage.hpp"
 #include "LegacySecretReader.hpp"
+#include "ClientBackend.hpp"
 
 #include <QFile>
 #include <QLoggingCategory>
@@ -109,6 +110,11 @@ DcOption AccountStorage::dcInfo() const
 void AccountStorage::setDcInfo(const DcOption &newDcInfo)
 {
     d->m_dcInfo = newDcInfo;
+}
+
+bool AccountStorage::sync()
+{
+    emit synced();
 }
 
 AccountStorage::AccountStorage(AccountStoragePrivate *dd, QObject *parent) :

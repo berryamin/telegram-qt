@@ -39,6 +39,11 @@ public slots:
     virtual bool saveData() const { return false; }
     virtual bool loadData() { return false; }
 
+    virtual bool sync();
+
+Q_SIGNALS:
+    void synced();
+
 protected:
     AccountStorage(AccountStoragePrivate *dd, QObject *parent = nullptr);
     AccountStoragePrivate *d;
