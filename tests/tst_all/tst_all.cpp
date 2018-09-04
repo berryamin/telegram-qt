@@ -45,6 +45,8 @@
 
 using namespace Telegram;
 
+constexpr int c_timeout = 500;
+
 struct UserData
 {
     quint32 dcId;
@@ -205,6 +207,9 @@ void tst_all::testClientConnection_data()
     userOnDc1.dcId = 1;
     UserData userOnDc2 = c_userWithPassword;
     userOnDc2.dcId = 2;
+    UserData user2OnDc2 = c_userWithPassword;
+    user2OnDc2.unsetPassword();
+    user2OnDc2.dcId = 2;
 
     DcOption opt = c_localDcOptions.first();
 
@@ -219,6 +224,14 @@ void tst_all::testClientConnection_data()
                                                << opt;
     QTest::newRow("Obfuscated with migration") << Client::Settings::SessionType::Obfuscated
                                                << userOnDc2
+                                               << opt;
+
+    opt.id = 0;
+    QTest::newRow("Migration from unknown dc (with password)") << Client::Settings::SessionType::Obfuscated
+                                               << userOnDc2
+                                               << opt;
+    QTest::newRow("Migration from unknown dc, no password") << Client::Settings::SessionType::Obfuscated
+                                               << user2OnDc2
                                                << opt;
 }
 
@@ -268,6 +281,7 @@ void tst_all::testClientConnection()
     QCOMPARE(dataStorage.serverConfiguration().dcOptions, cluster.serverConfiguration().dcOptions);
 
     // --- Sign in ---
+    QSignalSpy accountStorageSynced(&accountStorage, &Client::AccountStorage::synced);
     Client::AuthOperation *signInOperation = client.signIn();
     QSignalSpy serverAuthCodeSpy(server, &TestServer::authCodeSent);
 
@@ -281,24 +295,27 @@ void tst_all::testClientConnection()
 
     signInOperation->submitAuthCode(authCode);
 
-    QSignalSpy authPasswordSpy(signInOperation, &Client::AuthOperation::passwordRequired);
-    QSignalSpy passwordCheckFailedSpy(signInOperation, &Client::AuthOperation::passwordCheckFailed);
-    QTRY_VERIFY2(!authPasswordSpy.isEmpty(), "The user has a password-protection, "
-                                             "but there are no passwordRequired signals on the client side");
-    QCOMPARE(authPasswordSpy.count(), 1);
-    QVERIFY(passwordCheckFailedSpy.isEmpty());
+    if (!userData.password.isEmpty()) {
+        QSignalSpy authPasswordSpy(signInOperation, &Client::AuthOperation::passwordRequired);
+        QSignalSpy passwordCheckFailedSpy(signInOperation, &Client::AuthOperation::passwordCheckFailed);
+        QTRY_VERIFY2(!authPasswordSpy.isEmpty(), "The user has a password-protection, "
+                                                 "but there are no passwordRequired signals on the client side");
+        QCOMPARE(authPasswordSpy.count(), 1);
+        QVERIFY(passwordCheckFailedSpy.isEmpty());
 
-    PendingOperation *op = signInOperation->getPassword();
-    QTRY_VERIFY(op->isFinished());
+        PendingOperation *op = signInOperation->getPassword();
+        QTRY_VERIFY(op->isFinished());
 
-    signInOperation->submitPassword(userData.password + QStringLiteral("invalid"));
-    QTRY_VERIFY2(!passwordCheckFailedSpy.isEmpty(), "The submitted password is not valid, "
-                                                    "but there are not signals on the client side");
-    QVERIFY(!signInOperation->isFinished());
-    QCOMPARE(passwordCheckFailedSpy.count(), 1);
+        signInOperation->submitPassword(userData.password + QStringLiteral("invalid"));
+        QTRY_VERIFY2(!passwordCheckFailedSpy.isEmpty(), "The submitted password is not valid, "
+                                                        "but there are not signals on the client side");
+        QVERIFY(!signInOperation->isFinished());
+        QCOMPARE(passwordCheckFailedSpy.count(), 1);
 
-    signInOperation->submitPassword(userData.password);
+        signInOperation->submitPassword(userData.password);
+    }
     QTRY_VERIFY2(signInOperation->isSucceeded(), "Unexpected sign in fail");
+    QTRY_VERIFY_WITH_TIMEOUT(!accountStorageSynced.isEmpty(), c_timeout);
 
     quint64 clientAuthId = accountStorage.authId();
     QVERIFY(clientAuthId);
@@ -306,6 +323,8 @@ void tst_all::testClientConnection()
     QCOMPARE(clientConnections.count(), 1);
     Server::RemoteClientConnection *remoteClientConnection = *clientConnections.cbegin();
     QCOMPARE(remoteClientConnection->authId(), clientAuthId);
+    QCOMPARE(accountStorage.phoneNumber(), userData.phoneNumber);
+    QCOMPARE(accountStorage.dcInfo().id, server->dcId());
 }
 
 QTEST_GUILESS_MAIN(tst_all)
