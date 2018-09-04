@@ -16,7 +16,7 @@ Frame {
         anchors.fill: mainScreen.contentItem
         DialogView {
             id: dialogView
-            width: 400
+            width: 320
             height: parent.height
             onActivateDialog: {
                 console.log("Activate dialog peer(" + peer.type + ", " + peer.id + ")")

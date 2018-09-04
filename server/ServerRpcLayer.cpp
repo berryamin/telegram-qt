@@ -208,6 +208,11 @@ bool RpcLayer::sendRpcReply(const QByteArray &reply, quint64 messageId)
     return sendPackage(output.getData(), SendMode::ServerReply);
 }
 
+bool RpcLayer::sendRpcMessage(const QByteArray &message)
+{
+    return sendPackage(message, SendMode::ServerInitiative);
+}
+
 const char *RpcLayer::gzipPackMessage()
 {
     return "Server: gzip the answer for message";

@@ -56,7 +56,7 @@ ApplicationWindow {
     Telegram.AccountSecretHelper {
         id: accountHelper
 //        directory: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/telepathy-morse/secrets"
-        directory: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/morse/secrets"
+        directory: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/telegram-qt/secrets"
         onAccountsChanged: {
             console.log("Accounts:" + accounts)
             if (accounts.length > 0) {
@@ -193,5 +193,15 @@ ApplicationWindow {
     Shortcut {
         sequence: StandardKey.Quit
         onActivated: window.close()
+    }
+
+    ListView {
+        anchors.fill: parent
+        model: accountHelper.accounts
+        delegate: ItemDelegate {
+            width: 300
+            height: 64
+            text: modelData
+        }
     }
 }

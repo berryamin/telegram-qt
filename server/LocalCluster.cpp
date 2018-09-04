@@ -2,6 +2,7 @@
 
 #include "TelegramServer.hpp"
 #include "RemoteServerConnection.hpp"
+#include "TelegramServerUser.hpp"
 
 #include <QLoggingCategory>
 
@@ -65,6 +66,13 @@ bool LocalCluster::start()
     return !hasFails;
 }
 
+void LocalCluster::sendMessage(const QString &userId, const QString &text)
+{
+    RemoteUser *sender = getServiceUser();
+    RemoteUser *recipient = getUser(userId);
+    sender->sendMessage(recipient, text);
+}
+
 User *LocalCluster::addUser(const QString &identifier, quint32 dcId)
 {
     Server *server = getServerInstance(dcId);
@@ -73,6 +81,16 @@ User *LocalCluster::addUser(const QString &identifier, quint32 dcId)
         return nullptr;
     }
     return server->addUser(identifier);
+}
+
+RemoteUser *LocalCluster::getUser(const QString &identifier)
+{
+    return m_serverInstances.first()->getLocalOrRemoteUser(identifier);
+}
+
+RemoteUser *LocalCluster::getServiceUser()
+{
+    return nullptr;
 }
 
 Server *LocalCluster::getServerInstance(quint32 dcId)

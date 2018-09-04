@@ -17,6 +17,8 @@
 
 #include "DataStorage_p.hpp"
 
+#include <QLoggingCategory>
+
 namespace Telegram {
 
 namespace Client {
@@ -84,9 +86,54 @@ DataInternalApi::DataInternalApi(QObject *parent) :
 {
 }
 
-void DataInternalApi::processDialogs(const TLMessagesDialogs &dialogs)
+DataInternalApi::~DataInternalApi()
+{
+}
+
+const TLUser *DataInternalApi::getSelfUser() const
+{
+    if (!m_selfUserId) {
+        return nullptr;
+    }
+    return m_users.value(m_selfUserId);
+}
+
+void DataInternalApi::processData(const TLUser &user)
+{
+    TLUser *existsUser = m_users.value(user.id);
+    if (existsUser) {
+        *existsUser = user;
+    } else {
+        m_users.insert(user.id, new TLUser(user));
+    }
+    if (user.self()) {
+        if (m_selfUserId && (m_selfUserId != user.id)) {
+            qWarning() << "Got self user with different id.";
+        }
+        m_selfUserId = user.id;
+        //emit selfUserAvailable(user.id);
+    }
+    //int indexOfRequest = m_askedUserIds.indexOf(user.id);
+    //if (indexOfRequest >= 0) {
+    //    m_askedUserIds.remove(indexOfRequest);
+    //}
+    //if (!existsUser) {
+    //    emit peerAdded(toPublicPeer(user));
+    //    emit userInfoReceived(user.id);
+    //}
+}
+
+void DataInternalApi::processData(const TLAuthAuthorization &authorization)
+{
+    processData(authorization.user);
+}
+
+void DataInternalApi::processData(const TLMessagesDialogs &dialogs)
 {
     m_dialogs = dialogs;
+    for (const TLUser &user : dialogs.users) {
+        processData(user);
+    }
 }
 
 Peer DataInternalApi::toPublicPeer(const TLPeer &peer)
@@ -101,6 +148,28 @@ Peer DataInternalApi::toPublicPeer(const TLPeer &peer)
     default:
         return Telegram::Peer();
     }
+}
+
+TLInputUser DataInternalApi::toInputUser(quint32 userId) const
+{
+    TLInputUser inputUser;
+    if (userId == selfUserId()) {
+        inputUser.tlType = TLValue::InputUserSelf;
+        return inputUser;
+    }
+    const TLUser *user = m_users.value(userId);
+    if (user) {
+        if (user->tlType == TLValue::User) {
+            inputUser.tlType = TLValue::InputUser;
+            inputUser.userId = user->id;
+            inputUser.accessHash = user->accessHash;
+        } else {
+            qWarning() << Q_FUNC_INFO << "Unknown user type: " << QString::number(user->tlType, 16);
+        }
+    } else {
+        qWarning() << Q_FUNC_INFO << "Unknown user.";
+    }
+    return inputUser;
 }
 
 //QVector<Peer> InMemoryDataStorage::dialogs() const

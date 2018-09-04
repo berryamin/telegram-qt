@@ -62,6 +62,8 @@ public slots:
     bool saveData() const override;
     bool loadData() override;
 
+    bool sync() override;
+
     void setFileName(const QString &fileName);
 
 signals:

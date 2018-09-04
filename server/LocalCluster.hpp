@@ -30,6 +30,7 @@ namespace Server {
 
 class Server;
 class User;
+class RemoteUser;
 
 class LocalCluster : public QObject
 {
@@ -47,7 +48,11 @@ public:
 
     bool start();
 
+    void sendMessage(const QString &userId, const QString &text);
+
     User *addUser(const QString &identifier, quint32 dcId);
+    RemoteUser *getUser(const QString &identifier);
+    RemoteUser *getServiceUser();
 
     QVector<Server*> getServerInstances() { return m_serverInstances; }
     Server *getServerInstance(quint32 dcId);

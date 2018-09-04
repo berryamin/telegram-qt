@@ -6,6 +6,7 @@
 #include "TelegramUtils.hpp"
 #include "ServerDhLayer.hpp"
 #include "ServerRpcLayer.hpp"
+#include "TelegramServerUser.hpp"
 
 #include <QDateTime>
 #include <QLoggingCategory>
@@ -72,6 +73,7 @@ void RemoteClientConnection::setServerApi(ServerApi *api)
 
 void RemoteClientConnection::setSession(Session *session)
 {
+    session->setConnection(this);
     rpcLayer()->setSession(session);
 }
 

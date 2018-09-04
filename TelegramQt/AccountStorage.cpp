@@ -1,6 +1,7 @@
 #include "AccountStorage.hpp"
 #include "LegacySecretReader.hpp"
 #include "ClientBackend.hpp"
+#include "CRawStream.hpp"
 
 #include <QFile>
 #include <QLoggingCategory>
@@ -115,6 +116,7 @@ void AccountStorage::setDcInfo(const DcOption &newDcInfo)
 bool AccountStorage::sync()
 {
     emit synced();
+    return true;
 }
 
 AccountStorage::AccountStorage(AccountStoragePrivate *dd, QObject *parent) :
@@ -151,6 +153,21 @@ bool FileAccountStorage::saveData() const
     if (d->m_fileName.isEmpty()) {
         return false;
     }
+
+    QFile file(d->m_fileName);
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << Q_FUNC_INFO << "Unable to open file" << fileName();
+        return false;
+    }
+    file.write("TelegramQt");
+    CRawStreamEx outputStream(&file);
+    outputStream << d->m_deltaTime;
+    outputStream << d->m_dcInfo.id;
+    outputStream << d->m_dcInfo.address.toLatin1();
+    outputStream << d->m_dcInfo.port;
+    outputStream << d->m_authKey;
+    outputStream << d->m_authId;
+    qDebug() << Q_FUNC_INFO << "Saved key" << QString::number(authId(), 0x10);
     return true;
 }
 
@@ -161,26 +178,43 @@ bool FileAccountStorage::loadData()
         qWarning() << Q_FUNC_INFO << "File name is not set";
         return false;
     }
-    QUrl u(d->m_fileName);
-    QFile file(u.toLocalFile());
+    QFile file(d->m_fileName);
+//    QUrl u(d->m_fileName);
+//    QFile file(u.toLocalFile());
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << Q_FUNC_INFO << "Unable to open file" << fileName();
         return false;
     }
+    CRawStreamEx outputStream(&file);
+    outputStream >> d->m_deltaTime;
+    outputStream >> d->m_dcInfo.id;
+    QByteArray address;
+    outputStream >> address;
+    d->m_dcInfo.address = QString::fromLatin1(address);
+    outputStream >> d->m_dcInfo.port;
+    outputStream >> d->m_authKey;
+    outputStream >> d->m_authId;
+
     LegacySecretReader reader;
-    if (!reader.loadFromData(file.readAll())) {
-        qWarning() << Q_FUNC_INFO << "Unable to read the secret data";
-        return false;
-    }
-    d->m_accountIdentifier = QStringLiteral("my_account");
-    d->m_authKey = reader.authKey;
-    d->m_phoneNumber = reader.phoneNumber;
-    d->m_authId = reader.authId;
-    d->m_deltaTime = reader.deltaTime;
-    d->m_dcInfo = reader.dcInfo;
+//    if (!reader.loadFromData(file.readAll())) {
+//        qWarning() << Q_FUNC_INFO << "Unable to read the secret data";
+//        return false;
+//    }
+//    d->m_accountIdentifier = QStringLiteral("my_account");
+//    d->m_authKey = reader.authKey;
+//    d->m_phoneNumber = reader.phoneNumber;
+//    d->m_authId = reader.authId;
+//    d->m_deltaTime = reader.deltaTime;
+//    d->m_dcInfo = reader.dcInfo;
 
     qDebug() << Q_FUNC_INFO << "Loaded key" << QString::number(authId(), 0x10);
-    return true;
+    return outputStream.error();
+}
+
+bool FileAccountStorage::sync()
+{
+    saveData();
+    return AccountStorage::sync();
 }
 
 void FileAccountStorage::setFileName(const QString &fileName)

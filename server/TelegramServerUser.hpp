@@ -6,11 +6,14 @@
 
 #include "../TelegramQt/CAppInformation.hpp"
 
+#include "TLTypes.hpp"
+
 namespace Telegram {
 
 namespace Server {
 
 class User;
+class RemoteClientConnection;
 
 class Session
 {
@@ -28,6 +31,9 @@ public:
             appInfo = new CAppInformation(otherSession.appInfo);
         }
     }
+
+    void setConnection(RemoteClientConnection *) {}
+    RemoteClientConnection *getConnection() const { return nullptr; }
 
     User *userOrWantedUser() const { return m_user ? m_user : m_wanterUser; }
     User *user() const { return m_user; }
@@ -57,6 +63,10 @@ public:
     virtual QString lastName() const = 0;
     virtual bool isOnline() const = 0;
     virtual quint32 dcId() const = 0;
+    virtual quint32 sendMessage(RemoteUser *recipient, const QString &text) = 0;
+    virtual quint32 addMessage(RemoteUser *sender, const QString &text) = 0;
+
+    virtual TLPeer toPeer() const = 0;
 };
 
 class User : public QObject, public RemoteUser
@@ -82,6 +92,7 @@ public:
 
     Session *getSession(quint64 authId) const;
     QVector<Session*> sessions() const { return m_sessions; }
+    QVector<Session*> activeSessions() const;
     void addSession(Session *session);
 
     bool hasPassword() const { return !m_passwordSalt.isEmpty() && !m_passwordHash.isEmpty(); }
@@ -92,6 +103,11 @@ public:
     void setPassword(const QByteArray &salt, const QByteArray &hash);
 
     QString passwordHint() const { return QString(); }
+
+    TLPeer toPeer() const override;
+
+    quint32 addMessage(RemoteUser *sender, const QString &text) override;
+    quint32 sendMessage(RemoteUser *recipient, const QString &text) override;
 
 signals:
     void sessionAdded(Session *newSession);
@@ -107,6 +123,9 @@ protected:
     QByteArray m_passwordHash;
     QVector<Session*> m_sessions;
     quint32 m_dcId = 0;
+
+    quint32 m_pts = 0;
+    QVector<TLMessage> m_messages;
 };
 
 } // Server

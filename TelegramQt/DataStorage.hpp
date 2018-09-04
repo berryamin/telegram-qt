@@ -19,6 +19,7 @@
 #define TELEGRAMQT_DATA_STORAGE_HPP
 
 #include <QObject>
+#include <QHash>
 
 #include "DcConfiguration.hpp"
 #include "TelegramNamespace.hpp"
@@ -39,10 +40,15 @@ class DataInternalApi : public QObject
     Q_OBJECT
 public:
     explicit DataInternalApi(QObject *parent = nullptr);
+    ~DataInternalApi() override;
 
-    void processDialogs(const TLMessagesDialogs &dialogs);
+    const TLUser *getSelfUser() const;
 
+    void processData(const TLUser &user);
+    void processData(const TLAuthAuthorization &authorization);
+    void processData(const TLMessagesDialogs &dialogs);
 
+    quint32 selfUserId() const { return m_selfUserId; }
 
     // Getters
     // const TLUser *getUser(quint32 userId) const;
@@ -55,11 +61,13 @@ public:
     // Telegram::Peer toPublicPeer(const TLUser &user) const;
     // Telegram::Peer toPublicPeer(const TLChat *chat) const;
     // TLPeer toTLPeer(const Telegram::Peer &peer) const;
-    TLInputUser toInputUser(quint32 id) const { return TLInputUser(); }
+    TLInputUser toInputUser(quint32 userId) const;
     // TLInputChannel toInputChannel(const Telegram::Peer &peer);
     // TLInputChannel toInputChannel(const TLChat *chat);
     // TLInputChannel toInputChannel(const TLDialog &dialog);
 
+    quint32 m_selfUserId = 0;
+    QHash<quint32, TLUser*> m_users;
     TLMessagesDialogs m_dialogs;
 };
 

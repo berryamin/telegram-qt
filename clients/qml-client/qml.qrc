@@ -14,5 +14,8 @@
         <file>login/EnterName.qml</file>
         <file>login/EnterPassword.qml</file>
         <file>login/EnterPhone.qml</file>
+
+        <file>InlineHeader.qml</file>
+        <file>UnreadMessageIndicator.qml</file>
     </qresource>
 </RCC>

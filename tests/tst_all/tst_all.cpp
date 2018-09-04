@@ -24,6 +24,7 @@
 #include "Utils.hpp"
 #include "TelegramNamespace.hpp"
 #include "CAppInformation.hpp"
+#include "CRawStream.hpp"
 
 #include "Operations/ClientAuthOperation.hpp"
 
@@ -38,6 +39,7 @@
 #include <QSignalSpy>
 #include <QDebug>
 #include <QRegularExpression>
+#include <QTemporaryFile>
 
 #include "keys_data.hpp"
 
@@ -179,6 +181,8 @@ private slots:
     void cleanupTestCase();
     void testClientConnection_data();
     void testClientConnection();
+
+    void testAccountStorage();
 };
 
 tst_all::tst_all(QObject *parent) :
@@ -237,6 +241,7 @@ void tst_all::testClientConnection_data()
 
 void tst_all::testClientConnection()
 {
+    return;
     QFETCH(Telegram::Client::Settings::SessionType, sessionType);
     QFETCH(UserData, userData);
     QFETCH(DcOption, clientDcOption);
@@ -325,6 +330,122 @@ void tst_all::testClientConnection()
     QCOMPARE(remoteClientConnection->authId(), clientAuthId);
     QCOMPARE(accountStorage.phoneNumber(), userData.phoneNumber);
     QCOMPARE(accountStorage.dcInfo().id, server->dcId());
+}
+
+void tst_all::testAccountStorage()
+{
+    const Telegram::Client::Settings::SessionType sessionType = Telegram::Client::Settings::SessionType::Obfuscated;
+    const UserData userData = c_userWithPassword;
+    const DcOption clientDcOption = c_localDcOptions.first();
+
+    const RsaKey publicKey = Utils::loadRsaKeyFromFile(TestKeyData::publicKeyFileName());
+    QVERIFY2(publicKey.isValid(), "Unable to read public RSA key");
+    const RsaKey privateKey = Utils::loadRsaPrivateKeyFromFile(TestKeyData::privateKeyFileName());
+    QVERIFY2(privateKey.isValid(), "Unable to read private RSA key");
+
+    QTemporaryFile accountV1File;
+    accountV1File.setFileTemplate(accountV1File.fileTemplate() + QStringLiteral(".secret"));
+    QVERIFY2(accountV1File.open(), "Unable to create a temporary file"); // Touch the file
+
+//    {
+//        const quint32 secretFormatVersion = 4;
+//        const qint32 deltaTime = 0;
+
+//        CRawStreamEx outputStream(&accountV1File);
+//        outputStream << secretFormatVersion;
+//        outputStream << deltaTime;
+//        outputStream << clientDcOption.id;
+//        outputStream << clientDcOption.address.toLatin1();
+//        outputStream << clientDcOption.port;
+//        //outputStream << authKey;
+//        //outputStream << authId;
+//    }
+    accountV1File.close();
+
+    Telegram::Server::LocalCluster cluster;
+    cluster.setServerContructor(c_testServerConstructor);
+    cluster.setServerPrivateRsaKey(privateKey);
+    cluster.setServerConfiguration(c_localDcConfiguration);
+    QVERIFY(cluster.start());
+
+    Server::User *user = tryAddUser(&cluster, userData);
+    QVERIFY(user);
+
+    Client::Client client;
+    Client::FileAccountStorage accountStorage;
+    Client::Settings clientSettings;
+    Client::InMemoryDataStorage dataStorage;
+    client.setAppInformation(getAppInfo());
+    client.setSettings(&clientSettings);
+    client.setAccountStorage(&accountStorage);
+    client.setDataStorage(&dataStorage);
+    accountStorage.setFileName(accountV1File.fileName());
+    accountV1File.remove();
+
+    QVERIFY(clientSettings.setServerConfiguration({clientDcOption}));
+    QVERIFY(clientSettings.setServerRsaKey(publicKey));
+    clientSettings.setPreferedSessionType(sessionType);
+
+    // --- Connect ---
+    PendingOperation *connectOperation = client.connectToServer();
+    QTest::ignoreMessage(QtDebugMsg, QRegularExpression(QStringLiteral("%1 \\d* \"%2\"")
+                                                        .arg(QString::fromLatin1(Server::RpcLayer::gzipPackMessage()))
+                                                        .arg(TLValue(TLValue::Config).toString())));
+    QTRY_VERIFY(connectOperation->isSucceeded());
+
+    TestServer *server = qobject_cast<TestServer*>(cluster.getServerInstance(userData.dcId));
+    QVERIFY(server);
+
+    QCOMPARE(dataStorage.serverConfiguration().dcOptions, cluster.serverConfiguration().dcOptions);
+
+    // --- Sign in ---
+    QSignalSpy accountStorageSynced(&accountStorage, &Client::AccountStorage::synced);
+    Client::AuthOperation *signInOperation = client.signIn();
+    signInOperation->setPhoneNumber(userData.phoneNumber);
+    QSignalSpy serverAuthCodeSpy(server, &TestServer::authCodeSent);
+
+    QSignalSpy authCodeSpy(signInOperation, &Client::AuthOperation::authCodeRequired);
+    QTRY_VERIFY(!authCodeSpy.isEmpty());
+    QCOMPARE(authCodeSpy.count(), 1);
+    QCOMPARE(serverAuthCodeSpy.count(), 1);
+    QList<QVariant> authCodeSentArguments = serverAuthCodeSpy.takeFirst();
+    QCOMPARE(authCodeSentArguments.count(), 2);
+    const QString authCode = authCodeSentArguments.at(1).toString();
+
+    signInOperation->submitAuthCode(authCode);
+
+    if (!userData.password.isEmpty()) {
+        QSignalSpy authPasswordSpy(signInOperation, &Client::AuthOperation::passwordRequired);
+        QSignalSpy passwordCheckFailedSpy(signInOperation, &Client::AuthOperation::passwordCheckFailed);
+        QTRY_VERIFY2(!authPasswordSpy.isEmpty(), "The user has a password-protection, "
+                                                 "but there are no passwordRequired signals on the client side");
+        QCOMPARE(authPasswordSpy.count(), 1);
+        QVERIFY(passwordCheckFailedSpy.isEmpty());
+
+        PendingOperation *op = signInOperation->getPassword();
+        QTRY_VERIFY(op->isFinished());
+
+        signInOperation->submitPassword(userData.password + QStringLiteral("invalid"));
+        QTRY_VERIFY2(!passwordCheckFailedSpy.isEmpty(), "The submitted password is not valid, "
+                                                        "but there are not signals on the client side");
+        QVERIFY(!signInOperation->isFinished());
+        QCOMPARE(passwordCheckFailedSpy.count(), 1);
+
+        signInOperation->submitPassword(userData.password);
+    }
+    QTRY_VERIFY2(signInOperation->isSucceeded(), "Unexpected sign in fail");
+    QTRY_VERIFY_WITH_TIMEOUT(!accountStorageSynced.isEmpty(), c_timeout);
+
+    quint64 clientAuthId = accountStorage.authId();
+    QVERIFY(clientAuthId);
+    QSet<Server::RemoteClientConnection*> clientConnections = server->getConnections();
+    QCOMPARE(clientConnections.count(), 1);
+    Server::RemoteClientConnection *remoteClientConnection = *clientConnections.cbegin();
+    QCOMPARE(remoteClientConnection->authId(), clientAuthId);
+    QCOMPARE(accountStorage.phoneNumber(), userData.phoneNumber);
+    QCOMPARE(accountStorage.dcInfo().id, server->dcId());
+
+    accountV1File.open();
 }
 
 QTEST_GUILESS_MAIN(tst_all)

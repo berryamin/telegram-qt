@@ -10,6 +10,11 @@ Frame {
     width: 800
     height: 600
 
+    leftPadding: 0
+    rightPadding: 0
+    topPadding: 0
+    bottomPadding: 0
+
     signal activateDialog(var peer)
     //property alias activatedPeer: contactsModel2.peer
 
@@ -76,14 +81,9 @@ Frame {
     ListView {
         id: listView
         anchors.fill: parent
-        topMargin: Theme.paddingMedium
-        leftMargin: Theme.paddingMedium
-        bottomMargin: Theme.paddingMedium
-        rightMargin: Theme.paddingMedium
-        spacing: Theme.paddingSmall
         model: contactsModel
         delegate: DialogDelegate {
-            width: listView.width - listView.leftMargin - listView.rightMargin
+            width: listView.width
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
@@ -91,6 +91,7 @@ Frame {
                     dialogView.activateDialog(model.peer)
                 }
             }
+            displayName: model.firstName + " " + model.lastName
         }
         ScrollBar.vertical: ScrollBar {
         }

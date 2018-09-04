@@ -65,7 +65,7 @@ void MessagesOperation::onGetDialogsFinished(MessagesRpcLayer::PendingMessagesDi
 {
     TLMessagesDialogs dialogs;
     operation->getResult(&dialogs);
-    m_backend->dataStorage()->internalApi()->processDialogs(dialogs);
+    m_backend->dataStorage()->internalApi()->processData(dialogs);
     setFinished();
 }
 

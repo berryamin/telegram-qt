@@ -48,6 +48,7 @@ public:
 
     bool sendRpcError(const Telegram::RpcError &error, quint64 messageId);
     bool sendRpcReply(const QByteArray &reply, quint64 messageId);
+    bool sendRpcMessage(const QByteArray &message);
 
     static const char *gzipPackMessage();
 

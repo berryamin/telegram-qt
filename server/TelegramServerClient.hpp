@@ -26,10 +26,6 @@ public:
     void setRpcFactories(const QVector<RpcOperationFactory*> &rpcFactories);
     void setServerApi(ServerApi *api);
     void setSession(Session *session);
-
-signals:
-    void becomeOnline();
-
 };
 
 } // Server
