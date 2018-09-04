@@ -200,21 +200,33 @@ void tst_all::testClientConnection_data()
 {
     QTest::addColumn<Telegram::Client::Settings::SessionType>("sessionType");
     QTest::addColumn<UserData>("userData");
+    QTest::addColumn<DcOption>("clientDcOption");
     UserData userOnDc1 = c_userWithPassword;
     userOnDc1.dcId = 1;
     UserData userOnDc2 = c_userWithPassword;
     userOnDc2.dcId = 2;
 
-    QTest::newRow("Abridged")   << Client::Settings::SessionType::Abridged << userOnDc1;
-    QTest::newRow("Obfuscated") << Client::Settings::SessionType::Obfuscated << userOnDc1;
-    QTest::newRow("Abridged with migration")   << Client::Settings::SessionType::Abridged << userOnDc2;
-    QTest::newRow("Obfuscated with migration") << Client::Settings::SessionType::Obfuscated << userOnDc2;
+    DcOption opt = c_localDcOptions.first();
+
+    QTest::newRow("Abridged")   << Client::Settings::SessionType::Abridged
+                                << userOnDc1
+                                << opt;
+    QTest::newRow("Obfuscated") << Client::Settings::SessionType::Obfuscated
+                                << userOnDc1
+                                << opt;
+    QTest::newRow("Abridged with migration")   << Client::Settings::SessionType::Abridged
+                                               << userOnDc2
+                                               << opt;
+    QTest::newRow("Obfuscated with migration") << Client::Settings::SessionType::Obfuscated
+                                               << userOnDc2
+                                               << opt;
 }
 
 void tst_all::testClientConnection()
 {
     QFETCH(Telegram::Client::Settings::SessionType, sessionType);
     QFETCH(UserData, userData);
+    QFETCH(DcOption, clientDcOption);
 
     const RsaKey publicKey = Utils::loadRsaKeyFromFile(TestKeyData::publicKeyFileName());
     QVERIFY2(publicKey.isValid(), "Unable to read public RSA key");
@@ -239,7 +251,7 @@ void tst_all::testClientConnection()
     client.setAccountStorage(&accountStorage);
     client.setDataStorage(&dataStorage);
     accountStorage.setPhoneNumber(userData.phoneNumber);
-    QVERIFY(clientSettings.setServerConfiguration({c_localDcOptions.first()}));
+    QVERIFY(clientSettings.setServerConfiguration({clientDcOption}));
     QVERIFY(clientSettings.setServerRsaKey(publicKey));
     clientSettings.setPreferedSessionType(sessionType);
 
