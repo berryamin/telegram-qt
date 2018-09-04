@@ -61,8 +61,24 @@ struct UserData
         lastName = last;
     }
 
+    void unsetPassword()
+    {
+        setPassword(QString(), QByteArray());
+    }
+
+    void setPassword(const QString &pass, const QByteArray &salt)
+    {
+        password = pass;
+        setPasswordSalt(salt);
+    }
+
     void setPasswordSalt(const QByteArray &salt)
     {
+        if (salt.isEmpty()) {
+            passwordSalt.clear();
+            passwordHash.clear();
+            return;
+        }
         QByteArray pwdData = salt + password.toUtf8() + salt;
         passwordSalt = salt;
         passwordHash = Utils::sha256(pwdData);
