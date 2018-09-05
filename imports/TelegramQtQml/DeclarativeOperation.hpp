@@ -32,7 +32,7 @@ Q_SIGNALS:
     void targetChanged();
 
     void started();
-    void finished();
+    void finished(bool succeeded);
     void succeededChanged();
     void failed(const QVariantHash &details);
 

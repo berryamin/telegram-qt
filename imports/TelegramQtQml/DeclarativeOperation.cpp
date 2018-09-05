@@ -48,11 +48,13 @@ void DeclarativeOperation::setPendingOperation(PendingOperation *op)
 void DeclarativeOperation::onOperationFinished(PendingOperation *operation)
 {
     if (operation->isSucceeded()) {
-        emit succeeded();
+        // Operation is not succeeded until finished, so if it is finished
+        // and succeeded then the state is changed
+        emit succeededChanged();
     } else {
         emit failed(operation->errorDetails());
     }
-    emit finished();
+    emit finished(operation->isSucceeded());
 }
 
 } // Telegram
