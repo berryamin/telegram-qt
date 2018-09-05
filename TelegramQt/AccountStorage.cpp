@@ -175,12 +175,10 @@ bool FileAccountStorage::loadData()
 {
     TG_D(FileAccountStorage);
     if (d->m_fileName.isEmpty()) {
-        qWarning() << Q_FUNC_INFO << "File name is not set";
+        qDebug() << Q_FUNC_INFO << "File name is not set";
         return false;
     }
     QFile file(d->m_fileName);
-//    QUrl u(d->m_fileName);
-//    QFile file(u.toLocalFile());
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << Q_FUNC_INFO << "Unable to open file" << fileName();
         return false;
@@ -195,18 +193,6 @@ bool FileAccountStorage::loadData()
     outputStream >> d->m_authKey;
     outputStream >> d->m_authId;
 
-    LegacySecretReader reader;
-//    if (!reader.loadFromData(file.readAll())) {
-//        qWarning() << Q_FUNC_INFO << "Unable to read the secret data";
-//        return false;
-//    }
-//    d->m_accountIdentifier = QStringLiteral("my_account");
-//    d->m_authKey = reader.authKey;
-//    d->m_phoneNumber = reader.phoneNumber;
-//    d->m_authId = reader.authId;
-//    d->m_deltaTime = reader.deltaTime;
-//    d->m_dcInfo = reader.dcInfo;
-
     qDebug() << Q_FUNC_INFO << "Loaded key" << QString::number(authId(), 0x10);
     return outputStream.error();
 }
@@ -220,7 +206,11 @@ bool FileAccountStorage::sync()
 void FileAccountStorage::setFileName(const QString &fileName)
 {
     TG_D(FileAccountStorage);
+    if (d->m_fileName == fileName) {
+        return;
+    }
     d->m_fileName = fileName;
+    emit fileNameChanged(fileName);
 }
 
 } // Client

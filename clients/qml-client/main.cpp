@@ -170,6 +170,10 @@ int main(int argc, char *argv[])
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QGuiApplication app(argc, argv);
+    app.setApplicationName("TelegramQt");
+    //app.setApplicationDisplayName();
+    //app.setOrganizationDomain();
+    //app.setOrganizationName();
     QQuickStyle::setStyle("Material");
 
     QQmlApplicationEngine engine;

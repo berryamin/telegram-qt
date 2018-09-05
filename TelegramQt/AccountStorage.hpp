@@ -12,6 +12,7 @@ class AccountStoragePrivate;
 class AccountStorage : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QString accountIdentifier READ accountIdentifier WRITE setAccountIdentifier NOTIFY accountIdentifierChanged)
 public:
     explicit AccountStorage(QObject *parent = nullptr);
 
@@ -43,6 +44,7 @@ public slots:
 
 Q_SIGNALS:
     void synced();
+    void accountIdentifierChanged(const QString &accountIdentifier);
 
 protected:
     AccountStorage(AccountStoragePrivate *dd, QObject *parent = nullptr);
@@ -53,10 +55,12 @@ class FileAccountStorage : public AccountStorage
 {
     Q_OBJECT
     Q_PROPERTY(QString fileName READ fileName WRITE setFileName NOTIFY fileNameChanged)
+//    Q_PROPERTY(bool fileExists READ fileExists NOTIFY fileExistsChanged)
 public:
     explicit FileAccountStorage(QObject *parent = nullptr);
 
     QString fileName() const;
+//    bool fileExists() const;
 
 public slots:
     bool saveData() const override;
@@ -66,8 +70,9 @@ public slots:
 
     void setFileName(const QString &fileName);
 
-signals:
+Q_SIGNALS:
     void fileNameChanged(const QString &fileName);
+    void fileExistsChanged(bool exists);
 
 };
 

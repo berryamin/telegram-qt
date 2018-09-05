@@ -2,6 +2,7 @@ import QtQuick 2.7
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.0
 import Qt.labs.platform 1.0
+
 import TelegramQt 1.0 as Telegram
 import TelegramQtTheme 1.0
 
@@ -25,6 +26,9 @@ ApplicationWindow {
 //        horizontalAlignment: Text.AlignHCenter
 //    }
 
+    property string appname: Qt.application.name
+
+
 
     QtObject {
         id: options
@@ -44,28 +48,10 @@ ApplicationWindow {
 
     Telegram.FileAccountStorage {
         id: accountStorage
-////        property string authKey
-////        property string accountIdentifier
-////        property int authId
-////        property int deltaTime
-//        property string directory: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/telepathy-morse/secrets"
-//        // accountIdentifier: phoneNumberField.text
-//        // format: AccountSecretHelper.FormatBinary
+        accountIdentifier: "default"
+        fileName: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/telegram-qt/secrets/" + accountIdentifier
     }
 
-    Telegram.AccountSecretHelper {
-        id: accountHelper
-//        directory: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/telepathy-morse/secrets"
-        directory: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/telegram-qt/secrets"
-        onAccountsChanged: {
-            console.log("Accounts:" + accounts)
-            if (accounts.length > 0) {
-                account = accounts[0]
-            }
-            accountStorage.fileName = directory + "/" + account
-            accountStorage.loadData()
-        }
-    }
     Telegram.InMemoryDataStorage {
         id: dataStorage
     }
@@ -120,7 +106,6 @@ ApplicationWindow {
         id: telegramClient
         applicationInformation: appInfo
         settings: options.localServer ? localSettings : settings
-        readonly property bool hasAccount: accountHelper.accounts
         dataStorage: dataStorage
         accountStorage: accountStorage
 
@@ -136,13 +121,13 @@ ApplicationWindow {
         interval: 50
         running: true
         onTriggered: {
-            window.currentView = mainScreen; return
-            if (accountHelper.account) {
-                restoreSessionOperation.phoneNumber = accountHelper.account
-                restoreSessionOperation.start()
-            } else {
+//            window.currentView = mainScreen; return
+//            if (accountHelper.account) {
+//                restoreSessionOperation.phoneNumber = accountHelper.account
+//                restoreSessionOperation.start()
+//            } else {
                 window.currentView = loginScreen
-            }
+//            }
             signInOperation.start()
         }
     }
@@ -154,7 +139,7 @@ ApplicationWindow {
             window.currentView = loginScreen
         }
         onFinished: {
-            console.log("Sign in finished:" + succeed)
+            console.log("Sign in finished:" + succeeded)
         }
     }
 
@@ -195,13 +180,16 @@ ApplicationWindow {
         onActivated: window.close()
     }
 
-    ListView {
-        anchors.fill: parent
-        model: accountHelper.accounts
-        delegate: ItemDelegate {
-            width: 300
-            height: 64
-            text: modelData
-        }
-    }
+//    Pane {
+//        anchors.fill: parent
+//        ListView {
+//            anchors.fill: parent
+//            model: accountHelper.accounts
+//            delegate: ItemDelegate {
+//                width: parent.width
+//                height: 64
+//                text: modelData
+//            }
+//        }
+//    }
 }
